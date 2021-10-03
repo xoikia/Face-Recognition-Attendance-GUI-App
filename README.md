@@ -1,6 +1,10 @@
 # Face-Recognition-Attendance-GUI-App
+<p align="center">
+  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/image.jpg" alt="img">
+</p>
 
-A face recognition based attendance GUI which takes attendance and stores various data along with it.
+
+A face recognition based attendance GUI which takes attendance and stores various data along with it. The main libraries used are [tkinter](https://pypi.org/project/tkinter-page/), [face-recognition](https://pypi.org/project/face-recognition/), [open-cv](https://pypi.org/project/opencv-python/), [pickle](https://pypi.org/project/pickle5/)
 
 The repository consists of 3 main files:
     
@@ -14,7 +18,7 @@ the image and storing its encodings.
 Before explaining the code lets view the *flowchart* of the app.
 
 <p align="center">
-  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/Flow%20chart.png" alt="IPL">
+  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/Flow%20chart.png" alt="Flow chart">
 </p>
 
 
@@ -428,3 +432,42 @@ statusbar = Label(regframe, textvar=statsvar,  width=34, heigh=2, fg="white", bg
                   font=("times", 13))
 statusbar.place(x=90,y=380)
 ```
+##### `5 Attendance Frame`
+This frame holds the `label`, `Face Scan` button widget. The button widget is bind to the `scan_face` function of the `Face_Scan.py` file. This functios accepts two parameters. One is the `attstatus` label and the `attvar`. The first label will display a welcome message whenever the scan_face functions recognized the user for this the attvar is passed  which will be updated inside the function, by default it shows nothing but whenever a face is detected it is updated. When a user clicks on the `Face Scan` button the `scan_face` executes an window is opened which will match the face encodings with the list of encodings it has stored in the `Face_Encodings.pickle`.
+```
+att_label = Label(loginframe, text="Attendance", width=31, height=2, fg="white", bg="SlateBlue3", anchor="center",
+                  relief="raised", font=("times", 18, "bold"))
+att_label.place(x=2,y=0)
+
+attvar = StringVar()
+attstatus = Label(loginframe, textvar=attvar, width=60, height=23, fg="black", bg="gainsboro",
+                  font=("times", 8, "bold"), relief=GROOVE)
+
+face_button = Button(loginframe, text="Face Scan", command=(lambda: scan_face(attstatus, attvar)), width=30, height=1,
+                     fg="white", bg="Green", anchor="center", font=("times", 18, "bold"), relief=GROOVE)
+face_button.place(x=10, y=63)
+attstatus.place(x=10, y=127)
+```
+Finally `window.mainloop()` this code runs the GUI app 
+
+# OUTPUT
+
+### **`MAIN GUI`**
+<p align="center">
+  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/main%20gui.png" alt="MAIN GUI">
+</p>
+
+### **`Registration window`**
+<p align="center">
+  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/register%20window.png" alt="REGS">
+</p>
+
+### **`AttendnaceLog window`**
+<p align="center">
+  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/attendancelog%20window.png" alt="ATLOGS">
+</p>
+
+### **GUI IN ACTION**
+<p align="center">
+  <img src="https://github.com/xoikia/Face-Recognition-Attendance-Sysetm-GUI-App/blob/main/readme_images/Live%20GUI.gif" alt="Live GUI">
+</p>
