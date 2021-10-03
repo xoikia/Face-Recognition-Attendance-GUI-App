@@ -20,7 +20,7 @@ Before explaining the code lets view the *flowchart* of the app.
 
 # Explanation of the files
 
-First we will go through the codes of the **`Face_scan.py`** file.
+### **`Face_scan.py`**
 
 This files is responsible for scanning the faces, detecting whether the faces are in the pickle file or not, if the face encodings are not present it will ask to register them 
 first and if detected it takes attendance and stores the attendance logs and displaying it. All this process is done  by a single function **`scan_face`**. The function is bit  long so we will break into different parts for convenience
@@ -136,4 +136,85 @@ This blocks maintains the attendance logs of the user by inserting into the `Dai
     cv2.destroyAllWindows()
 ```
 If the `if` block inside  `PArt2` is `False` then `Part3, PArt4` doesn't executes at all and the `else` block is run. It creates info msg with `tmsg.showinfo` which tells the user that `Now Match Found, Please Register first!` and finally comes out of the loop wait for 1000ms and finally breaks out of the while loop and destroy the `cv2` window.
-All the `Parts` were inside the `scan_face` function
+All the `Parts` were inside the `scan_face` function.
+
+
+### **`View.py`**
+
+This  file is responsible for creating two new windows which will help us to visualize our two databases. It contains two functions `view_rdb` and `view_atlog`. We will go through the two functions one by one.
+
+#### **`view_rdb`**
+
+The code will divided into parts for better understanding
+
+#### Part1
+```
+def view_rdb():
+    window = Tk()
+    window.title("Registration Database")
+    window.resizable(0, 0)
+    window_height = 600
+    window_width = 600
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    x_cordinate = int((screen_width / 2) - (window_width / 2))
+    y_cordinate = int((screen_height / 2) - (window_height / 2))
+
+
+    window.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+    window.config(background="azure")
+
+    window.wm_iconbitmap("RDB.ico")
+    window.configure()
+    window.grid_rowconfigure(2, weight=1)
+    window.grid_columnconfigure(1, weight=1)
+```
+This block of code is responsible for creating the `Registration Database` which will display the `Database` as a table. The window is created by creating a object `window` of `Tk` class of `Tkinter`. We set the title name to *Registration Database* and the `window.resizable(0, 0)` code prevents any user to resize the window from its default `600x600` width and height. The  `x_cordinate = int((screen_width / 2) - (window_width / 2))` and `y_cordinate = int((screen_height / 2) - (window_height / 2))` locates the screen at a fix position everytime the window is open. Before positioning any widgets inside the window we need to configure the row and column. the `window.grid_rowconfigure(2, weight=1)` and  `window.grid_columnconfigure(1, weight=1)` does this for us . It takes two values index and weight. Each row and column in the grid is identified by an index. The weight determines how wide the column/row will occupy, which is relative to other columns/rows.
+
+#### Part2
+```
+    header = Label(window, text='Registration Database', width=41, height=2, fg="ghost white", bg="indian red",
+                   anchor='center', relief=RAISED, font=("times", 18, 'bold'))
+    header.place(x=0, y=2)
+
+    tree = ttk.Treeview(window, height=24)
+    tree['columns'] = ("UserId", "Name", "Mobile No", "Department", "Registration Date")
+
+    tree.column("#0", width=0, stretch=NO)
+    tree.column("UserId", anchor=CENTER, width=80)
+    tree.column("Name", anchor=CENTER, width=160)
+    tree.column("Mobile No", anchor=CENTER, width=100)
+    tree.column("Department", anchor=CENTER, width=120)
+    tree.column("Registration Date", anchor=CENTER, width=120)
+
+    tree.heading("#0", text="", anchor=CENTER)
+    tree.heading("UserId", text="User Id", anchor=CENTER)
+    tree.heading("Name", text="Name", anchor=CENTER)
+    tree.heading("Mobile No", text="Mobile No", anchor=CENTER)
+    tree.heading("Department", text="Department", anchor=CENTER)
+    tree.heading("Registration Date", text="Registration Date", anchor=CENTER)
+```
+First we create a `header` variable which stores the label **Registration Database** using the `Label` method and place it  at the given coordinatess in the window. Then we create a `tree ` widget using `ttk.Treeview(window, height=24)`. Here, window refers to the main Tkinter application master node. We will have 5 columns `UserId, Name, MobileN No, Department, Registration Date` inside the table. We then formate our columns. Basically these allows us the assign `width` size  of the columns and how the data will be placed using anchor, `Anchors` are used to define where text is positioned relative to a reference point. Finally we create headings of the columns, the `text` refers to the label of the column and `anchor` is the relative position where it will be placed. Here it will be placed at the `center`. So our tree is built, now we will insert values in the tree from our database which we will explain in part3.
+
+#### Part3
+```
+    conn = sqlite3.connect("Database.db")
+    cur = conn.cursor()
+    list_datas = cur.execute("SELECT * FROM Registered_User").fetchall()
+    for i ,data in enumerate(list_datas):
+        tree.insert(parent='', index='end', iid=i, text="", values=data)
+
+    tree.place(x=0,y=80)
+
+    scrollbar = ttk.Scrollbar(window, orient=tk.VERTICAL, command=tree.yview)
+    tree.configure(yscroll=scrollbar.set)
+    scrollbar.pack(side=RIGHT, fill=Y)
+    window.mainloop()
+```
+We are connecting to our `Database`  and fetching all the values from it and storing in a variable `list_datas`. Here the values will be in the form of a list and each row in the database corresponds to a value in a list, meaning value in the index position 0 of the list stores all the values of row 1 of the database. We then iterate over the `list_datas` using a for loop and inserting every single values from the list into the tree with the `tree.insert(parent='', index='end', iid=i, text="", values=data)` code. Finally we place the table at a fixed coordinates using `tree.place(x=0, y=80)`. Then we create a `Scrollbar` widget and bind it to our main window and place at the `RIGHT` side of the window and the height is of same as the window height. We finally tell the Tkinter to run the window using `window.mainloop()`.
+
+
+#### **`view_atlog`**
+This function is mostly same as the `view_rdb`. The only changes are the `Label`, the label is `Attendance Logs`, names of the columns `UserId, Name, Department, Date, Time`
+and the values that will be inserted. Here we will use the `AttendanceDB` and display it. Rest all the other code is same.
