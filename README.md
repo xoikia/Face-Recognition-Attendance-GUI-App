@@ -218,3 +218,213 @@ We are connecting to our `Database`  and fetching all the values from it and sto
 #### **`view_atlog`**
 This function is mostly same as the `view_rdb`. The only changes are the `Label`, the label is `Attendance Logs`, names of the columns `UserId, Name, Department, Date, Time`
 and the values that will be inserted. Here we will use the `AttendanceDB` and display it. Rest all the other code is same.
+
+### **`App.py`**
+This is the main file which will run the main GUI window. Beside that it contains two functions `capture_image` and `store_delete`.
+##### Part1 **`capture_image`**
+This function will be bind to the `take_capture` button in the `Registration` frame, so whenever the button is clicked it will open the camera window and lets the user to capture its face and store its encodings.
+```
+def capture_image():
+    vid = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    while True:
+        ret, frame = vid.read()
+        text = "Press C to capture face"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        color = (55, 19, 0)
+        frame = cv2.rectangle(frame, (20, 20), (620, 50), (235, 218, 164), -1)
+        frame = cv2.putText(frame, text, (25, 40), font, 0.8, color, 2, cv2.LINE_AA)
+
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(33) == ord('c'):
+            print("Capturing image")
+            image = cv2.resize(frame, (0, 0), None, fx=0.25, fy=0.25)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            face_loc = face_recognition.face_locations(image)
+            face_encode = face_recognition.face_encodings(image, face_loc)
+            try:
+                with open("Face_Encodings.pkl", "rb") as f:
+                    knownencodelist = pickle.load(f)
+                    idlist = pickle.load(f)
+                    print(knownencodelist)
+                    print("appending")
+                    knownencodelist[0].append(face_encode[0])
+                    print(knownencodelist)
+                    print("append complete")
+                    idlist.append(id_entry.get())
+
+                    open_pickle = open("Face_Encodings.pkl", 'wb')
+                    pickle.dump(knownencodelist, open_pickle)
+                    pickle.dump(idlist, open_pickle)
+                    open_pickle.close()
+
+            except:
+                face = open("Face_Encodings.pkl", "wb")
+                pickle.dump([face_encode], face)
+                pickle.dump([id_entry.get()], face)
+                face.close()
+
+            break
+
+    vid.release()
+    cv2.destroyAllWindows()
+
+    statusbar.update()
+    statsvar.set(name_entry.get()+" your face is added successfully")
+ ```
+ First we use cv2.VideoCapture() to get a video capture object for the camera, then  we start a infinte loop. We create a rectange using `cv2.rectangle` and inside the rectangle we place a text using `cv2.putText`. It displays the text `Press C to capture face`. So whenever the user pressed `c` in the keyboard the `if` block run.
+ 
+ Inside the if loop it first preprocess the frame it capture. It resize the image and convert BGR to RGB format. We are using the [face-recognition](https://pypi.org/project/face-recognition/) library. This library is responsible for identifying the locations as well as extracting the encodings of the faces from  the identified locations. The `face_recognition.face_locations(image)` command identifies the location of the faces from the frame and then we pass this locations to the `face_recognition.face_encodings(image, face_loc)`. This returns an n-dimensional array of the face enocdings of the users.The array will be stored in a list and any new face-encodings will be append into the list. This list stores the face-encodings of the users which we will used in the recognition process later on. We will convert htis list into byte stream using `pickle`. Due to the use of this library we are not building any neural network models or training it, we are simply passing the frame and the rest is handle by the library. 
+ 
+ After that we create `try` and `except` block. The try blocks checks whether the `Face_Encodings.pkl` is located in our directory or not. This file stores the encodings of the faces. If it is found in our directory we open it and load the encodings and the id's using `knownencodelist = pickle.load(f)` and `idlist = pickle.load(f)`. Now the *knownencodelist* holds the previous encodings of the other user and now the encodings of the new user are appended to it and similarly the id's of the new user is appended to the *idlist*. The id is extracted from the tkinter `id_entry` widget with the help of `id_entry.get()` method. Now both the list contains the encodings and the id's of the new user along with the encodings and id's of the previous user. Pickle format doesn't allow us to update a existing file directly so we need to dump both the new lists inside the `Face_Encodings.pkl` which will overwrite the existing list, inorder to that we open the pickle file in `write` mode and dump the lists and finally close the file.
+ 
+ If there is no `Face_Encodings.pkl` located in our directory the try block won't work and the `except` block run. It creates a `Face_Encodings.pkl` first then we dump both the encodings and the id's in the form of list and the close it, then finally we break out of the if loop as we had captured our image and stored our face-encodings along with our id's and close the camera window. After that it will update the `statusbar` widget of our GUI displaying that  *your face is added successfully*.
+ 
+ #### Part2
+ ```
+conn = sqlite3.connect("Database.db")
+cur = conn.cursor()
+try:
+    cur.execute("""CREATE TABLE Registered_User (
+                         UserID TEXT NOT NULL,
+                         Name TEXT NOT NULL,
+                         MobileNo INTEGER NOT NULL,
+                         Department TEXT NOT NULL,
+                         Registered_Date TEXT)""")
+
+    conn.commit()
+except sqlite3.OperationalError:
+    None
+
+conn.close()
+```
+This code block creates/connects to a database named `Database` in our project folder. This database would store information of all the users who will register themselves. The `try` blocks creates a table `Registered_User` if the table doesn't exist. If the table exists the `except` block runs, it does nothing and fonally close the connection to our database. This table will store the information of the users. The value will be extratced from the respective `entry` widgets in the `Registration` frame.
+
+#### Part3 **`store_delete`**
+This function is responsible of extracting the values the user entered in the `entry` widget and storing it in the `Database` and finally clearing the entry widgets. This function will be bind to the `Save Profile` button in the `Registration` frame.
+```
+def store_delete():
+    conn = sqlite3.connect("Database.db")
+    c = conn.cursor()
+
+    # inserting thr values into the database
+    c.execute("INSERT INTO Registered_User VALUES (:id_entry, :name_entry, :phone_entry, :dep_entry, :Registered_Date)",
+    {'id_entry': id_entry.get(), 'name_entry': name_entry.get(), 'phone_entry': phone_entry.get(),
+     'dep_entry': dep_entry.get(), 'Registered_Date': dt.date.today().strftime("%b-%d-%Y")})
+
+    conn.commit()
+    conn.close()
+
+    id_entry.delete(0, 'end')
+    name_entry.delete(0, 'end')
+    phone_entry.delete(0, 'end')
+    dep_entry.delete(0, 'end')
+    statusbar.update()
+    statsvar.set('')
+```
+It first connects to the `Database` and then stores the value in the `Registered_User`table inside the database. The `.get()` method extracts values from all the entry widgets.
+After inserting the values into the table we delete the values from the entry widget using the `.delete()` method and finally clears the statusbar widget too.
+
+#### Part4 **`Building the main GUI`**
+##### `1 Buidling the Window`
+```
+window = Tk()
+window.title("Facial Attendance System")
+window.resizable(0, 0)
+window_height = 600
+window_width = 1000
+screen_width = window.winfo_screenwidth()
+screen_height = window.winfo_screenheight()
+
+x_cordinate = int((screen_width / 2) - (window_width / 2))
+y_cordinate = int((screen_height / 2) - (window_height / 2))
+
+window.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+window.config(background="light blue")
+
+window.wm_iconbitmap("logo.ico")
+window.configure()
+window.grid_rowconfigure(2, weight=1)
+window.grid_columnconfigure(1, weight=1)
+```
+The above block of code builds the window of specified size and place it at the specified co-ordinates. It assigns a titel `Facial Attendance System` to the window. The 
+`window.wm_iconbitmap("logo.ico")` lets us add a custom icon to our GUI and then we finally we configure the rows and columns.
+
+##### `2 Adding Menus`
+```
+mainmenu = Menu(window)
+m1 = Menu(mainmenu, tearoff=0)
+m1.add_command(label="Registered Database", command=view_rdb)
+m1.add_command(label="Attendance Log", command=view_atlog)
+mainmenu.add_cascade(label="View Database", menu=m1)
+window.configure(menu=mainmenu)
+```
+We are creating a Menu widgets. First we create a top menu which stores the menu `View Database`. This line of code `mainmenu.add_cascade(label="View Database", menu=m1)` performs this. The inside this menu we are adding two submenus. The 3rd and 4th line of code add the submenus. The submenus are `Registered Database` and `Attendance Log`.
+This two menus are bind with the command `view_rdb` and `view_atlog` respectively. This are two functions from our `View.py` file. So whenever a user clicks the View Database he will have two options and as the user clicks anyone the respective function starts executing and a window pops out showing the database.
+
+##### `3 Building the label and the two frames`
+```
+header = Label(window, text='Attendance System',width=71, height=2 , fg="white", bg="SlateBlue3",anchor='center',
+               font=("times", 18, 'bold'), relief=RAISED)
+header.place(x=0, y=0)
+
+
+regframe = Frame(window, width=450, height=450, bg="SlateBlue2", borderwidth=2, relief=GROOVE)
+regframe.place(x=30, y=100)
+
+loginframe = Frame(window, width=450, height=450, bg="SlateBlue2", borderwidth=2, relief=GROOVE)
+loginframe.place(x=520, y=100)
+```
+First we create the label of the GUI app , Our GUI app will have two separate frames, One is the `Registration` frame and the other is the `Attendance` frame. The above chunk of code just builds the two separate frame inside our main window.
+
+##### `4 Registration frame`
+This frames holds the necessary widgets such as labels, entry widgets  and the buttons to let a new user to register by capturing his/her image and storing their informations into the database. There are 4 entry widgets `id_entry, name_entry, phone_entry, dep_entry` and two buttons `Take Picture, Submit` and a `Staustbar` The entry widgets lets the user to enter the information and the `Take Picture`button is  bind with `capture_image` function defined ealier, so whenever a user clicks  it opens the camera window to take picture once the pciture is captured the `statusbar` is update. The `Submit` button is bind  with `store_submit` function. Once clicked it stores the information into the database and finally clears all the entry widgets and the statusbar. All this process of building and storing informations is done by below chunk of code.
+```
+reg_label=Label(regframe, text="Register New Employee", width=31, height=2, fg="white", bg="SlateBlue3",
+                anchor="center", relief="raised", font=("times", 18, 'bold'))
+reg_label.place(x=2,y=0)
+
+id_label = Label(regframe, text="User ID", width=8, height=2, fg="white", bg="SlateBlue3", font=("times", 12),
+                 relief="ridge")
+id_label.place(x=10,y =60)
+idvar = tk.StringVar()
+id_entry = Entry(regframe, width=30, textvar=idvar, bg="white", fg="black",font=("times", 15, "bold"))
+id_entry.place(x=100, y=65)
+
+name_label = Label(regframe, text="Name", width=8, height=2, fg="white", bg="SlateBlue3", font=("times", 12),
+                   relief="ridge")
+name_label.place(x=10,y=120)
+namevar = tk.StringVar()
+name_entry = Entry(regframe, width=30, textvar=namevar, bg="white", fg="black",font=("times", 15, "bold"))
+name_entry.place(x=100, y=125)
+
+phone_label = Label(regframe, text="Mobile No", width=8, height=2, fg="white", bg="SlateBlue3", font=("times", 12),
+                    relief="ridge")
+phone_label.place(x=10, y=180)
+phonevar = tk.IntVar()
+phone_entry = Entry(regframe, width=30, textvar=phonevar, bg="white", fg="black",font=("times", 15, "bold"))
+phone_entry.place(x=100, y=185)
+
+dep_label = Label(regframe, text="Department", width=8, height=2, fg="white", bg="SlateBlue3", font=("times", 12),
+                  relief="ridge")
+dep_label.place(x=10,y=240)
+depvar = tk.StringVar()
+dep_entry = Entry(regframe, width=30, textvar=depvar, bg="white", fg="black",font=("times", 15, "bold"))
+dep_entry.place(x=100, y=245)
+
+pic_button = Button(regframe, text="Take Picture", command=capture_image, width=9, height=2, fg="white", bg="SlateBlue3",
+                    font=("times", 12))
+pic_button.place(x=110,y=300)
+
+profile_button = Button(regframe, text="Save Profile", width=9, height=2, fg="white", bg="SlateBlue3", font=("times", 12),
+                        command= store_delete)
+profile_button.place(x=230, y=300)
+
+status_label = Label(regframe, text="Status", width=8, height=2, fg="white", bg="SlateBlue3", font=("times", 12),
+                     relief="ridge")
+status_label.place(x=10, y=380)
+
+statsvar = StringVar()
+statusbar = Label(regframe, textvar=statsvar,  width=34, heigh=2, fg="white", bg="#FFA500", relief= RAISED,
+                  font=("times", 13))
+statusbar.place(x=90,y=380)
+```
